@@ -1,0 +1,31 @@
+import glob
+import csv
+import pandas as pd
+
+RECORD_SECONDS = 5
+#音測定時のデータ取得時間をRECORD_SECONDSとして入力
+RATE = 44100
+#音測定時のsampling rateをRATEとして入力
+
+if __name__ == '__main__':
+
+  file_list = glob.glob('*.csv')#フォルダ内のファイル名を全て読み込み
+  
+  for file_name in file_list:
+    #file_listとして取得したフォルダ内のファイルを順に読み込み
+    df = pd.read_csv(file_name)
+    #csvファイルをpandas dataframeとして読み込み
+    df.columns = ["time","Amplitude"]
+    #読み込んだファイルに、columnsをつける
+    df["time"] = df['time']*(RECORD_SECONDS/(len(df['time'])-1))
+    #元データは、timeが取得データ数　取得時間÷取得データ数で、timeを時間に換算
+    df_max = df.loc[df['Amplitude'].idxmax()]
+    #Amplitudeの最大値の行を抽出
+    df_max_time = df_max['time']
+    #抽出した最大値の行の中のtimeを抽出
+    df_extract_1s_pre = df[df['time'] > (df_max_time-0.2)]
+    #最大値から0.2sよりも前のデータを全て切り捨て
+    df_extract_1s = df_extract_1s_pre[0:RATE]
+    #ピーク値ー0.2s　～　1s後まででデータ切り出し（sampling rate = 44.1kHz 1s = 44.1k）
+    # ピーク値ー0.2s以上でデータを切り出し
+    df_extract_1s.to_csv(file_name+'_out.csv') #csvファイルとして出力
